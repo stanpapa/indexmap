@@ -806,6 +806,34 @@ where
     pub fn append<S2>(&mut self, other: &mut IndexMap<K, V, S2>) {
         self.extend(other.drain(..));
     }
+
+    /// Evaluate whether 2 maps are equivalent using a custom function to compare values.
+    ///
+    /// Requirements for equivalency are:
+    /// 1. both maps have the same length
+    /// 2. both maps have the same keys
+    /// 3. values mapped to each key are equivalent according to the comparison function, `eq`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use indexmap::IndexMap;
+    ///
+    /// let a = IndexMap::from([(3, 1.0), (2, 2.0), (1, 3.0)]);
+    /// let b = IndexMap::from([(3, 0.999999), (2, 2.000001), (1, 3.0000003)]);
+    ///
+    /// assert!(a.eq_by(&b, |x: &f64, y: &f64| { (x - y).abs() <= 2e-6 }));
+    /// ```
+    pub fn eq_by<V2, S2, F>(&self, other: &IndexMap<K, V2, S2>, mut eq: F) -> bool
+    where
+        S2: BuildHasher,
+        F: FnMut(&V, &V2) -> bool,
+    {
+        self.len() == other.len()
+            && self
+                .iter()
+                .all(|(key, value)| other.get(key).map_or(false, |v| eq(value, v)))
+    }
 }
 
 impl<K, V, S> IndexMap<K, V, S>
